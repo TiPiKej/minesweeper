@@ -1,7 +1,18 @@
+let minesweeper;
+
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(500, 600);
+
+  minesweeper = new Minesweeper();
+  minesweeper.draw();
 }
 
-function draw() {
-  background(51);
+function mousePressed() {
+  if (mouseX < width && mouseY < height) {
+    minesweeper.clicked();
+  }
+}
+
+function mouseMoved() {
+  minesweeper.moved();
 }
