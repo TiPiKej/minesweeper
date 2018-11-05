@@ -1,0 +1,26 @@
+{
+  "name": "minesweeper",
+  "version": "1.0.0",
+  "homepage": "https://tipikej.github.io/minesweeper",
+  "description": "Mine Sweeper Game",
+  "main": "index.js",
+  "scripts": {
+    "startServer": "cd ./dist/ && live-server",
+    "start": "code ./dist/ && npm run startServer",
+    "deploy": "gh-pages -d dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TiPiKej/minesweeper.git"
+  },
+  "author": "Tomasz Kumot",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TiPiKej/minesweeper/issues"
+  },
+  "devDependencies": {
+    "gh-pages": "^2.0.1",
+    "live-server": "^1.2.0"
+  }
+}
