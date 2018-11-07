@@ -1,9 +1,10 @@
 class Minesweeper {
-  constructor(bombs = 10, rows = 4, cols = 4) {
+  constructor(bombs = 30, rows = 10, cols = 10) {
     this.bombs = bombs;
     this.rows = rows;
     this.cols = cols;
     this.movedTitle = false;
+    this.reset();
   }
 
   setFields() {
@@ -18,33 +19,84 @@ class Minesweeper {
   }
 
   randomBombs() {
-    if (this.rows * this.cols < this.bombs) console.error("Too much bombs");
-    else {
-      for (let i = 0; i < this.bombs; i++) {
-        const randomized = Math.floor(random(0, this.rows * this.cols));
-        let row = Math.floor(randomized / this.cols);
-        let col = randomized % this.cols;
-        if (!this.fields[row][col].bomb) {
-          this.fields[row][col].bomb = true;
-        } else i--;
-      }
+    if (this.rows * this.cols < this.bombs) throw new Error("Too much bombs");
+
+    for (let i = 0; i < this.bombs; i++) {
+      const randomized = Math.floor(random(0, this.rows * this.cols));
+      let row = Math.floor(randomized / this.cols);
+      let col = randomized % this.cols;
+
+      if (!this.fields[row][col].bomb) {
+        this.fields[row][col].bomb = true;
+      } else i--;
     }
   }
 
+  capture(cFi) {
+    if (cFi.checked) return false;
+
+    console.log(cFi);
+  }
+
   clicked() {
-    if (mouseY < 70) {
-      this.draw();
-    } else {
-      let field;
-      field = this.fields.filter(
-        row => row[0].y < mouseY && row[0].y + row[0].wh > mouseY
+    let clickedField = this.fields;
+    clickedField = clickedField.filter(
+      row => row[0].y < mouseY && row[0].y + row[0].wh > mouseY
+    );
+    if (clickedField[0] !== undefined) {
+      clickedField = clickedField[0].filter(
+        col => col.x < mouseX && col.x + col.wh > mouseX
       )[0];
-      field =
-        field !== undefined
-          ? field.filter(col => col.x < mouseX && col.x + col.wh > mouseX)[0]
-          : false;
-      if (field ? field.bomb : null) this.loose = true;
     }
+
+    if (mouseY < 70) return this.reset();
+    if (!clickedField || clickedField.length === 0) return false;
+
+    if (mouseButton === "center") return this.capture(clickedField);
+    if (mouseButton === "left") {
+      if (clickedField.bomb) this.loose = true;
+      else if (!clickedField.bomb) this.showNearlyBombs(clickedField);
+    }
+  }
+
+  showNearlyBombs(field) {
+    field.checked = true;
+  }
+
+  nearlyBombs(field) {
+    function checkRow(row = [], cur = false) {
+      if (row && row.length > 0) {
+        let w = 0;
+        if (checkCol(row[field.col - 2])) w++;
+        if (checkCol(row[field.col - 1])) w++;
+        if (checkCol(row[field.col])) w++;
+
+        return w;
+      }
+
+      return 0;
+    }
+
+    function checkCol(col = {}) {
+      if (col) return col.bomb;
+    }
+
+    // console.log(field);
+
+    // console.log(`All rows ${this.rows} All cols: ${this.cols}`);
+    // console.log(`This row ${field.row} This col: ${field.col}`);
+
+    const prevRow = this.fields[field.row - 2];
+    const curRow = this.fields[field.row - 1];
+    const nextRow = this.fields[field.row];
+
+    let w = 0;
+
+    w += checkRow(prevRow);
+    w += checkRow(curRow, true);
+    w += checkRow(nextRow);
+
+    return w;
   }
 
   moved() {
@@ -55,9 +107,7 @@ class Minesweeper {
     }
   }
 
-  pointsBar(timeReset = false, stringPar) {
-    if (timeReset) this.time = 0;
-
+  pointsBar() {
     let string = this.loose ? `You loose!` : `Time: ${Math.floor(this.time)}`;
 
     const fontSize = 60;
@@ -67,10 +117,8 @@ class Minesweeper {
     if (this.movedTitle) string = "Click to restart";
 
     text(string, 10, 10, width - 20, fontSize);
-    this.counter = setTimeout(() => {
-      this.time += 0.1;
-      this.pointsBar();
-    }, 100);
+
+    if (this.frameCount % 60 === 59) this.time++;
   }
 
   drawFields() {
@@ -85,27 +133,48 @@ class Minesweeper {
           ncol === 0 ? margin * (ncol + 1) : margin * ncol * 2 + margin;
         const marginTop =
           nrow === 0 ? margin * (nrow + 1) : margin * nrow * 2 + margin;
-        if (col.bomb) fill(255, 0, 0);
+
+        if (this.frameCount % 10000 === 5) col;
+
+        if (col.checked && col.bomb) fill(255, 0, 0);
+
         translate(ncol * whbox + marginLeft, nrow * whbox + marginTop);
         rect(0, 0, whbox, whbox);
         this.fields[nrow][ncol].x = ncol * whbox + marginLeft;
         this.fields[nrow][ncol].y = nrow * whbox + marginTop + top;
         this.fields[nrow][ncol].wh = whbox;
+        this.fields[nrow][ncol].row = nrow + 1;
+        this.fields[nrow][ncol].col = ncol + 1;
+        this.fields[nrow][ncol].nearlyBombs = this.nearlyBombs(
+          this.fields[nrow][ncol]
+        );
+
         pop();
+
+        if (col.checked && !col.bomb) {
+          if (this.frameCount % 10000 === 5) console.log(col);
+          textSize(col.wh);
+          text(
+            String(col.nearlyBombs),
+            col.x + col.wh * 0.25,
+            col.y - top + col.wh * 0.9
+          );
+        }
       });
     });
   }
 
   draw() {
-    this.reset();
     background(51);
-    this.pointsBar(true);
+    this.pointsBar();
     this.drawFields();
+    this.frameCount++;
   }
 
   reset() {
     resetMatrix();
     this.time = 0;
+    this.frameCount = 0;
     this.loose = false;
     this.setFields();
     this.randomBombs();

@@ -4,6 +4,9 @@ function setup() {
   createCanvas(500, 600);
 
   minesweeper = new Minesweeper();
+}
+
+function draw() {
   minesweeper.draw();
 }
 
