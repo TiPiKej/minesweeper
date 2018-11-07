@@ -5,6 +5,8 @@ class Minesweeper {
     this.cols = cols;
     this.movedTitle = false;
     this.reset();
+    this.flagImg = loadImage("img/flag.png");
+    this.bombImg = loadImage("img/bomb.png");
   }
 
   setFields() {
@@ -35,10 +37,18 @@ class Minesweeper {
   capture(cFi) {
     if (cFi.checked) return false;
 
+    cFi.flag = cFi.flag === undefined ? true : !cFi.flag;
     console.log(cFi);
   }
 
+  looseF() {
+    this.loose = true;
+  }
+
   clicked() {
+    if (mouseY < 70) return this.reset();
+    if (this.loose) return false;
+
     let clickedField = this.fields;
     clickedField = clickedField.filter(
       row => row[0].y < mouseY && row[0].y + row[0].wh > mouseY
@@ -49,17 +59,17 @@ class Minesweeper {
       )[0];
     }
 
-    if (mouseY < 70) return this.reset();
     if (!clickedField || clickedField.length === 0) return false;
 
     if (mouseButton === "center") return this.capture(clickedField);
     if (mouseButton === "left") {
-      if (clickedField.bomb) this.loose = true;
+      if (clickedField.bomb) this.looseF();
       else if (!clickedField.bomb) this.showNearlyBombs(clickedField);
     }
   }
 
   showNearlyBombs(field) {
+    field.flag = false;
     field.checked = true;
   }
 
@@ -148,6 +158,26 @@ class Minesweeper {
         this.fields[nrow][ncol].nearlyBombs = this.nearlyBombs(
           this.fields[nrow][ncol]
         );
+
+        if (this.fields[nrow][ncol].flag) {
+          image(
+            this.flagImg,
+            col.wh / 5,
+            col.wh / 5,
+            (col.wh * 2) / 3,
+            (col.wh * 2) / 3
+          );
+        }
+
+        if (this.loose && this.fields[nrow][ncol].bomb) {
+          image(
+            this.bombImg,
+            col.wh / 5,
+            col.wh / 5,
+            (col.wh * 2) / 3,
+            (col.wh * 2) / 3
+          );
+        }
 
         pop();
 
