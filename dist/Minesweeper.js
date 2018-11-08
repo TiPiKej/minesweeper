@@ -1,5 +1,5 @@
 class Minesweeper {
-  constructor(bombs = 30, rows = 10, cols = 10) {
+  constructor(bombs = 10, rows = 4, cols = 4) {
     this.bombs = bombs;
     this.rows = rows;
     this.cols = cols;
@@ -36,9 +36,21 @@ class Minesweeper {
 
   capture(cFi) {
     if (cFi.checked) return false;
+    // console.log(this.captureFlags, this.bombs);
+    if (this.captureFlags >= this.bombs) {
+      if (cFi.flag) {
+        cFi.flag = false;
+        this.captureFlags--;
+      }
+      return false;
+    }
 
     cFi.flag = cFi.flag === undefined ? true : !cFi.flag;
-    console.log(cFi);
+
+    if (cFi.flag) this.captureFlags++;
+    else this.captureFlags--;
+
+    // console.log(cFi);
   }
 
   looseF() {
@@ -48,6 +60,7 @@ class Minesweeper {
   clicked() {
     if (mouseY < 70) return this.reset();
     if (this.loose) return false;
+    if (this.win) return false;
 
     let clickedField = this.fields;
     clickedField = clickedField.filter(
@@ -63,6 +76,7 @@ class Minesweeper {
 
     if (mouseButton === "center") return this.capture(clickedField);
     if (mouseButton === "left") {
+      if (clickedField.flag) return false;
       if (clickedField.bomb) this.looseF();
       else if (!clickedField.bomb) this.showNearlyBombs(clickedField);
     }
@@ -118,12 +132,14 @@ class Minesweeper {
   }
 
   pointsBar() {
-    let string = this.loose ? `You loose!` : `Time: ${Math.floor(this.time)}`;
+    let string = `Time: ${Math.floor(this.time)}`;
 
     const fontSize = 60;
     rect(10, 10, width - 20, 60);
     textSize(fontSize);
 
+    if (this.loose) string = "You loose!";
+    if (this.win) string = "Winner!";
     if (this.movedTitle) string = "Click to restart";
 
     text(string, 10, 10, width - 20, fontSize);
@@ -159,7 +175,7 @@ class Minesweeper {
           this.fields[nrow][ncol]
         );
 
-        if (this.fields[nrow][ncol].flag) {
+        if (this.fields[nrow][ncol].flag && !this.win) {
           image(
             this.flagImg,
             col.wh / 5,
@@ -169,7 +185,7 @@ class Minesweeper {
           );
         }
 
-        if (this.loose && this.fields[nrow][ncol].bomb) {
+        if ((this.loose || this.win) && this.fields[nrow][ncol].bomb) {
           image(
             this.bombImg,
             col.wh / 5,
@@ -181,7 +197,7 @@ class Minesweeper {
 
         pop();
 
-        if (col.checked && !col.bomb) {
+        if ((col.checked || this.win) && !col.bomb) {
           if (this.frameCount % 10000 === 5) console.log(col);
           textSize(col.wh);
           text(
@@ -194,18 +210,43 @@ class Minesweeper {
     });
   }
 
+  winner() {
+    // console.log("winner");
+    this.win = true;
+  }
+
+  checkFlagBombs() {
+    let without = 0;
+
+    this.fields.forEach(el => {
+      without += el.filter(
+        field => field.bomb && field.flag && field.flag !== undefined
+      ).length;
+    });
+
+    if (this.bombs === without) this.winner();
+  }
+
   draw() {
+    this.checkFlagBombs();
+
     background(51);
     this.pointsBar();
     this.drawFields();
     this.frameCount++;
   }
 
-  reset() {
+  reset(bombs = false, rows = false, cols = false) {
+    this.bombs = bombs ? bombs : this.bombs;
+    this.rows = rows ? rows : this.rows;
+    this.cols = cols ? cols : this.cols;
+
     resetMatrix();
     this.time = 0;
     this.frameCount = 0;
+    this.captureFlags = 0;
     this.loose = false;
+    this.win = false;
     this.setFields();
     this.randomBombs();
     clearTimeout(this.counter);
